@@ -1,0 +1,24 @@
+services:
+  backend:
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+    command: sh -c "npm run prisma:generate && npm run dev"
+
+  cms:
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+
+  tv-landing:
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+
+  casting-proxy:
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+
+  db:
+    restart: unless-stopped

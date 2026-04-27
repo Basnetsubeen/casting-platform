@@ -1,0 +1,62 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-arm64-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Room {
+  id               String        @id @default(cuid())
+  roomNumber       String        @unique
+  chromecastIp     String
+  pairingCode      String        @db.VarChar(4)
+  pairingCodeUntil DateTime
+  isActive         Boolean       @default(true)
+  brandTheme       String?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+  castSessions     CastSession[]
+  menuItems        MenuItem[]
+}
+
+model CastSession {
+  id             String      @id @default(cuid())
+  guestDeviceId  String
+  guestSessionId String      @unique
+  roomId         String
+  room           Room        @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  status         SessionStatus @default(ACTIVE)
+  expiresAt      DateTime
+  createdAt      DateTime    @default(now())
+  endedAt        DateTime?
+
+  @@index([guestDeviceId, status])
+}
+
+model MenuItem {
+  id         String   @id @default(cuid())
+  roomId     String?
+  room       Room?    @relation(fields: [roomId], references: [id], onDelete: SetNull)
+  title      String
+  mediaUrl   String
+  mediaType  MediaType
+  actionType String
+  sortOrder  Int      @default(0)
+  isEnabled  Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+enum SessionStatus {
+  ACTIVE
+  TERMINATED
+  EXPIRED
+}
+
+enum MediaType {
+  IMAGE
+  VIDEO
+}

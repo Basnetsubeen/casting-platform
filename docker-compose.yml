@@ -1,0 +1,63 @@
+services:
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-casting}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-casting}
+      POSTGRES_DB: ${POSTGRES_DB:-casting_platform}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  backend:
+    build: ./backend
+    depends_on:
+      - db
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+      BACKEND_PORT: ${BACKEND_PORT:-4000}
+      PAIRING_CODE_TTL_SECONDS: ${PAIRING_CODE_TTL_SECONDS:-300}
+      SESSION_TTL_MINUTES: ${SESSION_TTL_MINUTES:-720}
+      SESSION_CLEANUP_INTERVAL_SECONDS: ${SESSION_CLEANUP_INTERVAL_SECONDS:-60}
+      JWT_SECRET: ${JWT_SECRET}
+      ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+    ports:
+      - "4000:4000"
+
+  cms:
+    build: ./cms
+    depends_on:
+      - backend
+    environment:
+      BACKEND_URL: http://backend:4000
+      ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+    ports:
+      - "3000:3000"
+
+  tv-landing:
+    build: ./tv-landing
+    depends_on:
+      - backend
+    environment:
+      VITE_BACKEND_URL: http://localhost:4000
+      VITE_CASTING_PROXY_URL: http://localhost:4100
+    ports:
+      - "5173:5173"
+
+  casting-proxy:
+    build: ./casting-proxy
+    depends_on:
+      - backend
+    environment:
+      BACKEND_URL: http://backend:4000
+      PROXY_SHARED_SECRET: ${PROXY_SHARED_SECRET}
+    ports:
+      - "4100:4100"
+    network_mode: bridge
+
+volumes:
+  pgdata:
